@@ -46,6 +46,9 @@ void TrafficLight::waitForGreen()
     // Once it receives TrafficLightPhase::green, the method returns.
     while(true){
         auto trafficLightPhase = queue->receive();
+        if (trafficLightPhase == TrafficLightPhase::green){
+            return;
+        }
     }
 }
 
