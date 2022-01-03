@@ -26,6 +26,7 @@ void MessageQueue<T>::send(T &&msg)
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
     std::lock_guard<std::mutex> lGuard(_mux);
     _message.push_back(std::move(msg));
+    std::cout << "send message" << std::endl;
     _cond.notify_one();
 }
 
@@ -43,6 +44,9 @@ void TrafficLight::waitForGreen()
     // FP.5b : add the implementation of the method waitForGreen, in which an infinite while-loop
     // runs and repeatedly calls the receive function on the message queue.
     // Once it receives TrafficLightPhase::green, the method returns.
+    while(true){
+        auto trafficLightPhase = queue->receive();
+    }
 }
 
 TrafficLightPhase TrafficLight::getCurrentPhase()
