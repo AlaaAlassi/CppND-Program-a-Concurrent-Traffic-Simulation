@@ -4,13 +4,19 @@
 
 /* Implementation of class "MessageQueue" */
 
-/*
+
 template <typename T>
 T MessageQueue<T>::receive()
 {
     // FP.5a : The method receive should use std::unique_lock<std::mutex> and _condition.wait()
     // to wait for and receive new messages and pull them from the queue using move semantics.
     // The received object should then be returned by the receive function.
+    std::unique_lock<std::mutex> uLock(_mux);
+    _cond.wait(uLock,[this]{return !_message.empty();});
+    std::cout << "got the message" << std::endl;
+    T msg = std::move(_message.back());
+    _message.pop_back();
+    return msg;
 }
 
 template <typename T>
@@ -18,8 +24,11 @@ void MessageQueue<T>::send(T &&msg)
 {
     // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex>
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
+    std::lock_guard<std::mutex> lGuard(_mux);
+    _message.push_back(std::move(msg));
+    _cond.notify_one();
 }
-*/
+
 
 /* Implementation of class "TrafficLight" */
 
@@ -53,7 +62,7 @@ void TrafficLight::cycleThroughPhases()
     // and toggles the current phase of the traffic light between red and green and sends an update method
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds.
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles.
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    std::shared_ptr<MessageQueue<TraficLightPhase>> queue(new MessageQueue<TraficLightPhase>);
     while(true){
         std::this_thread::sleep_for(std::chrono::seconds(4));
         if(_currentPhase == TraficLightPhase::green){
@@ -62,5 +71,7 @@ void TrafficLight::cycleThroughPhases()
         {
             _currentPhase = TraficLightPhase::green;
         };
+        auto message = _currentPhase;
+    threads.emplace_back(&MessageQueue<TraficLightPhase>::send, queue, std::move(message));
     }
 }
