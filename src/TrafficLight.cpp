@@ -13,7 +13,6 @@ T MessageQueue<T>::receive()
     // The received object should then be returned by the receive function.
     std::unique_lock<std::mutex> uLock(_mux);
     _cond.wait(uLock,[this]{return !_message.empty();});
-    std::cout << "got the message" << std::endl;
     T msg = std::move(_message.back());
     _message.pop_back();
     return msg;
@@ -26,7 +25,6 @@ void MessageQueue<T>::send(T &&msg)
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
     std::lock_guard<std::mutex> lGuard(_mux);
     _message.push_back(std::move(msg));
-    std::cout << "send message" << std::endl;
     _cond.notify_one();
 }
 
@@ -56,6 +54,7 @@ void TrafficLight::waitForGreen()
 
 TrafficLightPhase TrafficLight::getCurrentPhase()
 {
+    std::lock_guard<std::mutex> lGuard(_mutex);
     return _currentPhase;
 }
 
@@ -83,7 +82,7 @@ void TrafficLight::cycleThroughPhases()
     while(true){
         auto deltaT = std::chrono::steady_clock::now() - tInit;
         if(deltaT >= tStop){
-            if(_currentPhase == TrafficLightPhase::green){
+            if(getCurrentPhase() == TrafficLightPhase::green){
             _currentPhase = TrafficLightPhase::red;
             } else
             {
@@ -91,11 +90,12 @@ void TrafficLight::cycleThroughPhases()
             };
             auto message = _currentPhase;
             queue->send(std::move(message));
-            deltaT = std::chrono::seconds(0);
+            deltaT = std::chrono::milliseconds(0);
             tInit = std::chrono::steady_clock::now();
             int temp = dis(gen);
             tStop =  std::chrono::milliseconds(temp);
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
 }
