@@ -14,7 +14,7 @@ T MessageQueue<T>::receive()
     std::unique_lock<std::mutex> uLock(_mux);
     _cond.wait(uLock,[this]{return !_message.empty();});
     T msg = std::move(_message.back());
-    _message.pop_back();
+    _message.clear();
     return msg;
 }
 
@@ -82,7 +82,7 @@ void TrafficLight::cycleThroughPhases()
     while(true){
         auto deltaT = std::chrono::steady_clock::now() - tInit;
         if(deltaT >= tStop){
-            if(getCurrentPhase() == TrafficLightPhase::green){
+            if(_currentPhase == TrafficLightPhase::green){
             _currentPhase = TrafficLightPhase::red;
             } else
             {
